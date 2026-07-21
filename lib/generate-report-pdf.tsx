@@ -1,6 +1,7 @@
 import { Document, Page, Text, View, StyleSheet, Image, renderToBuffer } from "@react-pdf/renderer";
 import fs from "fs";
 import path from "path";
+import { getVercelOidcToken } from "@vercel/oidc";
 
 interface ExpenseRow {
   date: string;
@@ -34,10 +35,14 @@ async function receiptToDataUri(receiptPath: string | null): Promise<string | nu
   if (!receiptPath) return null;
   try {
     if (receiptPath.startsWith("http")) {
+      let oidcToken: string | undefined;
+      try {
+        oidcToken = await getVercelOidcToken();
+      } catch {
+        oidcToken = undefined;
+      }
       const res = await fetch(receiptPath, {
-        headers: process.env.VERCEL_OIDC_TOKEN
-          ? { Authorization: `Bearer ${process.env.VERCEL_OIDC_TOKEN}` }
-          : undefined,
+        headers: oidcToken ? { Authorization: `Bearer ${oidcToken}` } : undefined,
       });
       const buffer = Buffer.from(await res.arrayBuffer());
       const contentType = res.headers.get("content-type") ?? "image/jpeg";

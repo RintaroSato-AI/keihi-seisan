@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
+import { getVercelOidcToken } from "@vercel/oidc";
 
 export async function GET(req: NextRequest) {
   const url = req.nextUrl.searchParams.get("u");
@@ -19,10 +20,15 @@ export async function GET(req: NextRequest) {
     return NextResponse.json({ error: "許可されていないホストです" }, { status: 400 });
   }
 
+  let oidcToken: string | undefined;
+  try {
+    oidcToken = await getVercelOidcToken();
+  } catch {
+    oidcToken = undefined;
+  }
+
   const res = await fetch(parsed.toString(), {
-    headers: process.env.VERCEL_OIDC_TOKEN
-      ? { Authorization: `Bearer ${process.env.VERCEL_OIDC_TOKEN}` }
-      : undefined,
+    headers: oidcToken ? { Authorization: `Bearer ${oidcToken}` } : undefined,
   });
 
   if (!res.ok || !res.body) {
