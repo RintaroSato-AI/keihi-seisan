@@ -10,7 +10,7 @@ export async function saveReceiptImage(file: File): Promise<string> {
   const filename = `${randomUUID()}.${ext}`;
   const buffer = Buffer.from(await file.arrayBuffer());
 
-  if (process.env.BLOB_READ_WRITE_TOKEN) {
+  if (process.env.BLOB_READ_WRITE_TOKEN || process.env.BLOB_STORE_ID) {
     const blob = await put(`receipts/${filename}`, buffer, {
       access: "public",
       contentType: file.type,
