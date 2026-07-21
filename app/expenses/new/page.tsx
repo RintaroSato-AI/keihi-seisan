@@ -3,6 +3,7 @@
 import { useEffect, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import { CATEGORIES } from "@/lib/categories";
+import { compressImage } from "@/lib/compress-image";
 
 interface Project {
   id: number;
@@ -90,7 +91,8 @@ export default function NewExpensePage() {
     setItems((prev) => [...prev, ...newItems]);
 
     newItems.forEach((item) => {
-      analyzeFile(item.file)
+      compressImage(item.file)
+        .then(analyzeFile)
         .then((data) => {
           setItems((prev) =>
             prev.map((it) =>
