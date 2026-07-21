@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
+import { randomUUID } from "crypto";
 import path from "path";
 import { mkdir, writeFile } from "fs/promises";
 import { put } from "@vercel/blob";
@@ -38,20 +39,13 @@ export async function POST(req: NextRequest) {
   }
 
   const totalAmount = expenses.reduce((sum, e) => sum + e.amount, 0);
+  const generatedAt = new Date();
 
-  const report = await prisma.expenseReport.create({
-    data: { projectId: Number(projectId), title, totalAmount },
-  });
-
-  await prisma.expense.updateMany({
-    where: { id: { in: expenses.map((e) => e.id) } },
-    data: { reportId: report.id },
-  });
-
+  // PDF生成・保存を先に行い、失敗時はDBに何も書き込まないようにする
   const pdfBuffer = await generateReportPdfBuffer({
     title,
     projectName: project.name,
-    generatedAt: report.generatedAt,
+    generatedAt,
     expenses: expenses
       .sort((a, b) => a.date.localeCompare(b.date))
       .map((e) => ({
@@ -66,7 +60,7 @@ export async function POST(req: NextRequest) {
 
   let pdfPath: string;
   if (process.env.BLOB_READ_WRITE_TOKEN || process.env.BLOB_STORE_ID) {
-    const blob = await put(`reports/${report.id}.pdf`, pdfBuffer, {
+    const blob = await put(`reports/${randomUUID()}.pdf`, pdfBuffer, {
       access: "public",
       contentType: "application/pdf",
     });
@@ -74,14 +68,21 @@ export async function POST(req: NextRequest) {
   } else {
     const dir = path.join(process.cwd(), "public", "uploads", "reports");
     await mkdir(dir, { recursive: true });
-    pdfPath = `/uploads/reports/${report.id}.pdf`;
-    await writeFile(path.join(dir, `${report.id}.pdf`), pdfBuffer);
+    const filename = `${randomUUID()}.pdf`;
+    pdfPath = `/uploads/reports/${filename}`;
+    await writeFile(path.join(dir, filename), pdfBuffer);
   }
 
-  const updated = await prisma.expenseReport.update({
-    where: { id: report.id },
-    data: { pdfPath },
+  const report = await prisma.$transaction(async (tx) => {
+    const created = await tx.expenseReport.create({
+      data: { projectId: Number(projectId), title, totalAmount, generatedAt, pdfPath },
+    });
+    await tx.expense.updateMany({
+      where: { id: { in: expenses.map((e) => e.id) } },
+      data: { reportId: created.id },
+    });
+    return created;
   });
 
-  return NextResponse.json(updated, { status: 201 });
+  return NextResponse.json(report, { status: 201 });
 }
