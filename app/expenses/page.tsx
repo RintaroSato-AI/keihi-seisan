@@ -3,6 +3,7 @@
 import { useEffect, useState } from "react";
 import Link from "next/link";
 import { CATEGORIES } from "@/lib/categories";
+import { toViewUrl } from "@/lib/file-url";
 
 interface Expense {
   id: number;
@@ -133,7 +134,7 @@ export default function ExpensesPage() {
               <span className="font-semibold">¥{e.amount.toLocaleString()}</span>
               {e.receiptPath && (
                 <a
-                  href={e.receiptPath}
+                  href={toViewUrl(e.receiptPath) ?? undefined}
                   target="_blank"
                   rel="noreferrer"
                   className="text-xs text-blue-600 underline"

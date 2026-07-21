@@ -1,5 +1,6 @@
 import { prisma } from "@/lib/prisma";
 import { notFound } from "next/navigation";
+import { toViewUrl } from "@/lib/file-url";
 
 export default async function ReportDetailPage({
   params,
@@ -25,7 +26,7 @@ export default async function ReportDetailPage({
       <div className="mb-6 flex gap-3">
         {report.pdfPath && (
           <a
-            href={report.pdfPath}
+            href={toViewUrl(report.pdfPath) ?? undefined}
             target="_blank"
             rel="noreferrer"
             className="rounded-lg bg-black px-4 py-2 text-sm font-medium text-white"

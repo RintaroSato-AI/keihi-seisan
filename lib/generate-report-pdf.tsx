@@ -34,7 +34,11 @@ async function receiptToDataUri(receiptPath: string | null): Promise<string | nu
   if (!receiptPath) return null;
   try {
     if (receiptPath.startsWith("http")) {
-      const res = await fetch(receiptPath);
+      const res = await fetch(receiptPath, {
+        headers: process.env.VERCEL_OIDC_TOKEN
+          ? { Authorization: `Bearer ${process.env.VERCEL_OIDC_TOKEN}` }
+          : undefined,
+      });
       const buffer = Buffer.from(await res.arrayBuffer());
       const contentType = res.headers.get("content-type") ?? "image/jpeg";
       return `data:${contentType};base64,${buffer.toString("base64")}`;

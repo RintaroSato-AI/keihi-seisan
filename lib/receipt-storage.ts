@@ -1,7 +1,7 @@
 import { randomUUID } from "crypto";
 import path from "path";
 import { mkdir, writeFile } from "fs/promises";
-import { put } from "@vercel/blob";
+import { BLOB_ENABLED, blobPut } from "@/lib/blob-put";
 
 const LOCAL_UPLOAD_DIR = path.join(process.cwd(), "public", "uploads", "receipts");
 
@@ -10,12 +10,8 @@ export async function saveReceiptImage(file: File): Promise<string> {
   const filename = `${randomUUID()}.${ext}`;
   const buffer = Buffer.from(await file.arrayBuffer());
 
-  if (process.env.BLOB_READ_WRITE_TOKEN || process.env.BLOB_STORE_ID) {
-    const blob = await put(`receipts/${filename}`, buffer, {
-      access: "public",
-      contentType: file.type,
-    });
-    return blob.url;
+  if (BLOB_ENABLED) {
+    return blobPut(`receipts/${filename}`, buffer, file.type);
   }
 
   await mkdir(LOCAL_UPLOAD_DIR, { recursive: true });

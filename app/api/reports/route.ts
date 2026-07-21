@@ -2,9 +2,9 @@ import { NextRequest, NextResponse } from "next/server";
 import { randomUUID } from "crypto";
 import path from "path";
 import { mkdir, writeFile } from "fs/promises";
-import { put } from "@vercel/blob";
 import { prisma } from "@/lib/prisma";
 import { generateReportPdfBuffer } from "@/lib/generate-report-pdf";
+import { BLOB_ENABLED, blobPut } from "@/lib/blob-put";
 
 export async function GET() {
   const reports = await prisma.expenseReport.findMany({
@@ -59,12 +59,8 @@ export async function POST(req: NextRequest) {
   });
 
   let pdfPath: string;
-  if (process.env.BLOB_READ_WRITE_TOKEN || process.env.BLOB_STORE_ID) {
-    const blob = await put(`reports/${randomUUID()}.pdf`, pdfBuffer, {
-      access: "public",
-      contentType: "application/pdf",
-    });
-    pdfPath = blob.url;
+  if (BLOB_ENABLED) {
+    pdfPath = await blobPut(`reports/${randomUUID()}.pdf`, pdfBuffer, "application/pdf");
   } else {
     const dir = path.join(process.cwd(), "public", "uploads", "reports");
     await mkdir(dir, { recursive: true });
