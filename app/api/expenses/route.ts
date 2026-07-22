@@ -1,28 +1,12 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
+import { buildExpenseWhere } from "@/lib/expense-filters";
 
 export async function GET(req: NextRequest) {
   const { searchParams } = new URL(req.url);
-  const projectId = searchParams.get("projectId");
-  const category = searchParams.get("category");
-  const from = searchParams.get("from");
-  const to = searchParams.get("to");
-  const unassignedOnly = searchParams.get("unassignedOnly");
 
   const expenses = await prisma.expense.findMany({
-    where: {
-      ...(projectId ? { projectId: Number(projectId) } : {}),
-      ...(category ? { category } : {}),
-      ...(from || to
-        ? {
-            date: {
-              ...(from ? { gte: from } : {}),
-              ...(to ? { lte: to } : {}),
-            },
-          }
-        : {}),
-      ...(unassignedOnly === "true" ? { reportId: null } : {}),
-    },
+    where: buildExpenseWhere(searchParams),
     include: { project: true },
     orderBy: { date: "desc" },
   });

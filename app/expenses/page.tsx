@@ -36,15 +36,19 @@ export default function ExpensesPage() {
       .then(setProjects);
   }, []);
 
+  function buildParams() {
+    const params = new URLSearchParams();
+    if (projectId) params.set("projectId", projectId);
+    if (category) params.set("category", category);
+    if (from) params.set("from", from);
+    if (to) params.set("to", to);
+    return params;
+  }
+
   async function load() {
     setLoading(true);
     try {
-      const params = new URLSearchParams();
-      if (projectId) params.set("projectId", projectId);
-      if (category) params.set("category", category);
-      if (from) params.set("from", from);
-      if (to) params.set("to", to);
-      const res = await fetch(`/api/expenses?${params.toString()}`);
+      const res = await fetch(`/api/expenses?${buildParams().toString()}`);
       setExpenses(await res.json());
     } finally {
       setLoading(false);
@@ -107,8 +111,16 @@ export default function ExpensesPage() {
         />
       </div>
 
-      <div className="mb-3 text-right text-sm text-black/60">
-        {loading ? "読み込み中..." : `${expenses.length}件 / 合計 ¥${total.toLocaleString()}`}
+      <div className="mb-3 flex items-center justify-end gap-3 text-sm">
+        <span className="text-black/60">
+          {loading ? "読み込み中..." : `${expenses.length}件 / 合計 ¥${total.toLocaleString()}`}
+        </span>
+        <a
+          href={`/api/expenses/excel?${buildParams().toString()}`}
+          className="rounded-lg border border-black/15 px-3 py-1.5 text-xs font-medium"
+        >
+          Excelエクスポート
+        </a>
       </div>
 
       <ul className="divide-y divide-black/10 rounded-xl border border-black/10 bg-white">
